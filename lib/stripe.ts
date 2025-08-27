@@ -1,13 +1,19 @@
 import Stripe from "stripe"
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error("STRIPE_SECRET_KEY is not set")
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY
+
+if (!stripeSecretKey) {
+  console.warn("STRIPE_SECRET_KEY is not set. Stripe functionality will be disabled.")
 }
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2024-11-20.acacia",
-  typescript: true,
-})
+export const stripe = stripeSecretKey
+  ? new Stripe(stripeSecretKey, {
+      apiVersion: "2024-11-20.acacia",
+      typescript: true,
+    })
+  : null
+
+export const isStripeConfigured = () => !!stripe
 
 export const PLANS = {
   basic: {

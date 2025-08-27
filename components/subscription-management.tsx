@@ -15,7 +15,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { PLANS, type PlanType } from "@/lib/stripe"
+import { PLANS, type PlanType, isStripeConfigured } from "@/lib/stripe"
 import { Calendar, Pause, Play, X, ArrowUpDown, AlertTriangle, CheckCircle } from "lucide-react"
 
 interface SubscriptionManagementProps {
@@ -35,7 +35,14 @@ export function SubscriptionManagement({ subscription }: SubscriptionManagementP
   const [showCancelDialog, setShowCancelDialog] = useState(false)
   const [showPlanChangeDialog, setShowPlanChangeDialog] = useState(false)
 
+  const stripeConfigured = isStripeConfigured()
+
   const handleSubscriptionAction = async (action: string, additionalData?: any) => {
+    if (!stripeConfigured) {
+      console.error("Stripe is not configured")
+      return
+    }
+
     try {
       setLoading(action)
 
@@ -83,6 +90,15 @@ export function SubscriptionManagement({ subscription }: SubscriptionManagementP
 
   return (
     <div className="space-y-6">
+      {!stripeConfigured && (
+        <Alert className="border-yellow-200 bg-yellow-50">
+          <AlertTriangle className="h-4 w-4 text-yellow-600" />
+          <AlertDescription className="text-yellow-800">
+            Stripe is not configured. Subscription management features are disabled.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Subscription Status */}
       <Card>
         <CardHeader>
@@ -130,7 +146,7 @@ export function SubscriptionManagement({ subscription }: SubscriptionManagementP
               <>
                 <Dialog open={showPlanChangeDialog} onOpenChange={setShowPlanChangeDialog}>
                   <DialogTrigger asChild>
-                    <Button variant="outline">
+                    <Button variant="outline" disabled={!stripeConfigured}>
                       <ArrowUpDown className="mr-2 h-4 w-4" />
                       Change Plan
                     </Button>
@@ -174,7 +190,9 @@ export function SubscriptionManagement({ subscription }: SubscriptionManagementP
                         onClick={() =>
                           handleSubscriptionAction("change_plan", { priceId: PLANS[selectedPlan].priceId })
                         }
-                        disabled={selectedPlan === subscription.currentPlan || loading === "change_plan"}
+                        disabled={
+                          selectedPlan === subscription.currentPlan || loading === "change_plan" || !stripeConfigured
+                        }
                       >
                         {loading === "change_plan" ? "Updating..." : "Change Plan"}
                       </Button>
@@ -185,7 +203,7 @@ export function SubscriptionManagement({ subscription }: SubscriptionManagementP
                 <Button
                   variant="outline"
                   onClick={() => handleSubscriptionAction("pause")}
-                  disabled={loading === "pause"}
+                  disabled={loading === "pause" || !stripeConfigured}
                 >
                   <Pause className="mr-2 h-4 w-4" />
                   {loading === "pause" ? "Pausing..." : "Pause Subscription"}
@@ -193,7 +211,11 @@ export function SubscriptionManagement({ subscription }: SubscriptionManagementP
 
                 <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
                   <DialogTrigger asChild>
-                    <Button variant="outline" className="text-destructive hover:text-destructive bg-transparent">
+                    <Button
+                      variant="outline"
+                      className="text-destructive hover:text-destructive bg-transparent"
+                      disabled={!stripeConfigured}
+                    >
                       <X className="mr-2 h-4 w-4" />
                       Cancel Subscription
                     </Button>
@@ -213,7 +235,7 @@ export function SubscriptionManagement({ subscription }: SubscriptionManagementP
                       <Button
                         variant="destructive"
                         onClick={() => handleSubscriptionAction("cancel")}
-                        disabled={loading === "cancel"}
+                        disabled={loading === "cancel" || !stripeConfigured}
                       >
                         {loading === "cancel" ? "Canceling..." : "Cancel Subscription"}
                       </Button>
@@ -227,7 +249,7 @@ export function SubscriptionManagement({ subscription }: SubscriptionManagementP
               <Button
                 variant="default"
                 onClick={() => handleSubscriptionAction("reactivate")}
-                disabled={loading === "reactivate"}
+                disabled={loading === "reactivate" || !stripeConfigured}
               >
                 <CheckCircle className="mr-2 h-4 w-4" />
                 {loading === "reactivate" ? "Reactivating..." : "Reactivate Subscription"}
@@ -238,7 +260,7 @@ export function SubscriptionManagement({ subscription }: SubscriptionManagementP
               <Button
                 variant="default"
                 onClick={() => handleSubscriptionAction("resume")}
-                disabled={loading === "resume"}
+                disabled={loading === "resume" || !stripeConfigured}
               >
                 <Play className="mr-2 h-4 w-4" />
                 {loading === "resume" ? "Resuming..." : "Resume Subscription"}
